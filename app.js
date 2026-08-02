@@ -31,28 +31,64 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ---------------- Local edit state (prep checklist + open items) ----------
-// Stored in this browser's localStorage only — not synced anywhere. Each
-// group tracks which default items were removed, which custom items were
-// added, and (for the checklist) which items are checked off.
+// ---------------- Shared edit state (prep checklist + open items) --------
+// Backed by /api/state (Vercel KV) so edits sync across devices. Falls back
+// to this browser's localStorage if the API isn't reachable (e.g. previewing
+// the site outside of Vercel), so it still works, just not synced.
 
 const STORAGE_KEY = "triptracker-edits-v1";
+const emptyEditState = () => ({ prep: {}, openItems: { added: [], removed: [] } });
 
-function loadEditState() {
+let EDIT_STATE = emptyEditState();
+let BACKEND_AVAILABLE = false;
+
+function loadLocalCache() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) {
     /* ignore corrupt storage */
   }
-  return { prep: {}, openItems: { added: [], removed: [] } };
+  return null;
 }
 
-function saveEditState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(EDIT_STATE));
+function saveLocalCache() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(EDIT_STATE));
+  } catch (e) {
+    /* storage unavailable — nothing more we can do */
+  }
 }
 
-const EDIT_STATE = loadEditState();
+async function loadEditState() {
+  try {
+    const r = await fetch("/api/state", { cache: "no-store" });
+    if (!r.ok) throw new Error("bad status " + r.status);
+    const data = await r.json();
+    BACKEND_AVAILABLE = true;
+    return data || emptyEditState();
+  } catch (e) {
+    BACKEND_AVAILABLE = false;
+    return loadLocalCache() || emptyEditState();
+  }
+}
+
+async function saveEditState() {
+  saveLocalCache();
+  if (!BACKEND_AVAILABLE) return;
+  try {
+    const r = await fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(EDIT_STATE),
+    });
+    if (!r.ok) throw new Error("bad status " + r.status);
+  } catch (e) {
+    // couldn't reach the backend this time — local cache still has the edit,
+    // and the next successful save will carry the full state up.
+    BACKEND_AVAILABLE = false;
+  }
+}
 
 function prepGroupState(heading) {
   if (!EDIT_STATE.prep[heading]) {
@@ -386,9 +422,15 @@ document.getElementById("jump-today").addEventListener("click", () => {
 
 // ---------------- Init ----------------
 
-renderHero();
-renderTimeline();
-renderCalendars();
-renderPrep();
-renderOpenItems();
-renderAgenda();
+async function init() {
+  renderHero();
+  renderTimeline();
+  renderCalendars();
+  renderAgenda();
+
+  EDIT_STATE = await loadEditState();
+  renderPrep();
+  renderOpenItems();
+}
+
+init();
