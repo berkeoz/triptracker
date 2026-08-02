@@ -466,7 +466,11 @@ function renderAgenda() {
             <li class="${e.custom ? "custom" : ""}" ${e.custom ? `data-id="${e.id}"` : ""}>
               <span class="event-time">${formatTime12h(e.time)}</span>
               <span class="event-text">${e.custom ? escapeHtml(e.text) : e.text}</span>
-              ${e.custom ? `<button type="button" class="remove-btn" title="Remove">×</button>` : ""}
+              ${
+                e.custom
+                  ? `<button type="button" class="edit-btn" title="Edit">✎</button><button type="button" class="remove-btn" title="Remove">×</button>`
+                  : ""
+              }
             </li>`
               )
               .join("") || `<li class="empty">Nothing scheduled yet.</li>`
@@ -508,6 +512,16 @@ function renderAgenda() {
     });
   });
 
+  el.querySelectorAll(".day-schedule .edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const li = btn.closest("li");
+      const date = li.closest(".day-schedule").dataset.date;
+      const id = li.dataset.id;
+      const ev = customEventsForDate(date).find((e) => e.id === id);
+      if (ev) startEditingEvent(li, date, ev);
+    });
+  });
+
   el.querySelectorAll(".add-event-row").forEach((form) => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -520,6 +534,38 @@ function renderAgenda() {
       saveEditState();
       renderAgenda();
     });
+  });
+}
+
+function startEditingEvent(li, date, ev) {
+  li.classList.add("editing");
+  li.innerHTML = `
+    <form class="edit-event-row">
+      <input type="time" class="edit-time" required />
+      <input type="text" class="edit-text" maxlength="200" required />
+      <button type="submit" title="Save">Save</button>
+      <button type="button" class="cancel-edit-btn" title="Cancel">Cancel</button>
+    </form>
+  `;
+  const timeInput = li.querySelector(".edit-time");
+  const textInput = li.querySelector(".edit-text");
+  // Set via properties, not HTML attributes, so quotes/special chars in
+  // user text can't break out of the markup.
+  timeInput.value = ev.time;
+  textInput.value = ev.text;
+  textInput.focus();
+
+  li.querySelector(".cancel-edit-btn").addEventListener("click", () => renderAgenda());
+
+  li.querySelector(".edit-event-row").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const time = timeInput.value;
+    const text = textInput.value.trim();
+    if (!time || !text) return;
+    ev.time = time;
+    ev.text = text;
+    saveEditState();
+    renderAgenda();
   });
 }
 
