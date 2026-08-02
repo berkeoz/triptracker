@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trip Tracker — Aug/Sep 2026</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-header">
+      <h1>Trip Tracker</h1>
+      <p>Toronto → Amsterdam → Istanbul → Greece → Istanbul → Toronto · 6 Aug – 6 Sep 2026</p>
+    </header>
+
+    <section id="hero-section">
+      <div class="hero" id="hero"></div>
+    </section>
+
+    <section>
+      <h2>Route</h2>
+      <div class="timeline-scroll" id="timeline"></div>
+    </section>
+
+    <section>
+      <h2>Calendar</h2>
+      <div class="calendars" id="calendars"></div>
+    </section>
+
+    <section id="prep-section">
+      <h2>Before departure</h2>
+      <div id="prep"></div>
+    </section>
+
+    <section id="open-section">
+      <h2>Open / undecided</h2>
+      <div class="panel">
+        <ul id="open-items"></ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Full agenda</h2>
+      <div id="agenda"></div>
+    </section>
+
+    <footer>Edit <code>data.js</code> to update flights, stays, and plans.</footer>
+  </div>
+
+  <button class="jump-today" id="jump-today">Jump to today</button>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
