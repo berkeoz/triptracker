@@ -119,6 +119,31 @@ function newEventId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// Anchor times used to slot the default morning/lunch/evening items into the
+// same chronological list as events added with an explicit time. Items whose
+// text already starts with an explicit "HH:MM — " time use that instead.
+const DEFAULT_SLOT_TIME = { morning: "08:00", lunch: "12:00", evening: "19:00" };
+
+function extractLeadingTime(fallbackTime, text) {
+  const m = text.match(/^(\d{1,2}):(\d{2})\s*[—-]\s*(.*)$/);
+  if (!m) return { time: fallbackTime, text };
+  return { time: `${m[1].padStart(2, "0")}:${m[2]}`, text: m[3] };
+}
+
+function dayScheduleEntries(day) {
+  const entries = [];
+  ["morning", "lunch", "evening"].forEach((slot) => {
+    (day.schedule[slot] || []).forEach((raw) => {
+      entries.push({ ...extractLeadingTime(DEFAULT_SLOT_TIME[slot], raw), custom: false });
+    });
+  });
+  customEventsForDate(day.date).forEach((ev) => {
+    entries.push({ time: ev.time, text: ev.text, custom: true, id: ev.id });
+  });
+  entries.sort((a, b) => a.time.localeCompare(b.time));
+  return entries;
+}
+
 // ---------------- Hero ----------------
 
 function renderHero() {
@@ -153,12 +178,10 @@ function renderHero() {
 
   const day = findDay(today);
   const leg = findLeg(day.leg);
-  const customToday = customEventsForDate(today)
-    .slice()
-    .sort((a, b) => a.time.localeCompare(b.time))
-    .map((ev) => `${formatTime12h(ev.time)} — ${ev.text}`);
-  const flat = [...day.schedule.morning, ...day.schedule.lunch, ...day.schedule.evening, ...customToday].slice(0, 5);
-  const items = flat.map((a) => `<li>${a}</li>`).join("");
+  const entries = dayScheduleEntries(day).slice(0, 5);
+  const items = entries
+    .map((e) => `<li>${formatTime12h(e.time)} — ${e.custom ? escapeHtml(e.text) : e.text}</li>`)
+    .join("");
   hero.innerHTML = `
     <div class="hero-eyebrow">Right now — ${formatDateLabel(today)}</div>
     <div class="hero-city">${leg.city}${leg.sub ? ` <span style="color:var(--muted);font-weight:400;font-size:1.1rem;">· ${leg.sub}</span>` : ""}</div>
@@ -431,29 +454,23 @@ function renderAgenda() {
       ? `<div class="open-note">Open: ${day.open.join("; ")}</div>`
       : "";
 
-    const slot = (label, items) =>
-      items && items.length
-        ? `<div class="slot"><h4>${label}</h4><ul class="agenda-list">${items.map((a) => `<li>${a}</li>`).join("")}</ul></div>`
-        : "";
+    const entries = dayScheduleEntries(day);
 
-    const customEvents = customEventsForDate(day.date)
-      .slice()
-      .sort((a, b) => a.time.localeCompare(b.time));
-
-    const customEventsHtml = `
-      <div class="custom-events" data-date="${day.date}">
-        <h4>Added events</h4>
-        <ul class="agenda-list custom-list">
-          ${customEvents
-            .map(
-              (ev) => `
-            <li data-id="${ev.id}">
-              <span class="event-time">${formatTime12h(ev.time)}</span>
-              <span class="event-text">${escapeHtml(ev.text)}</span>
-              <button type="button" class="remove-btn" title="Remove">×</button>
+    const scheduleHtml = `
+      <div class="day-schedule" data-date="${day.date}">
+        <ul class="agenda-list timed-list">
+          ${
+            entries
+              .map(
+                (e) => `
+            <li class="${e.custom ? "custom" : ""}" ${e.custom ? `data-id="${e.id}"` : ""}>
+              <span class="event-time">${formatTime12h(e.time)}</span>
+              <span class="event-text">${e.custom ? escapeHtml(e.text) : e.text}</span>
+              ${e.custom ? `<button type="button" class="remove-btn" title="Remove">×</button>` : ""}
             </li>`
-            )
-            .join("")}
+              )
+              .join("") || `<li class="empty">Nothing scheduled yet.</li>`
+          }
         </ul>
         <form class="add-event-row">
           <input type="time" required />
@@ -474,20 +491,15 @@ function renderAgenda() {
         ${day.going ? `<div class="going">→ ${day.going}</div>` : ""}
       </div>
       ${flightHtml}
-      <div class="schedule">
-        ${slot("Morning", day.schedule.morning)}
-        ${slot("Lunch", day.schedule.lunch)}
-        ${slot("Evening", day.schedule.evening)}
-      </div>
-      ${customEventsHtml}
+      ${scheduleHtml}
       ${openHtml}
     `;
     el.appendChild(card);
   });
 
-  el.querySelectorAll(".custom-events .remove-btn").forEach((btn) => {
+  el.querySelectorAll(".day-schedule .remove-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const wrap = btn.closest(".custom-events");
+      const wrap = btn.closest(".day-schedule");
       const date = wrap.dataset.date;
       const id = btn.closest("li").dataset.id;
       EDIT_STATE.events[date] = customEventsForDate(date).filter((ev) => ev.id !== id);
@@ -499,7 +511,7 @@ function renderAgenda() {
   el.querySelectorAll(".add-event-row").forEach((form) => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const wrap = form.closest(".custom-events");
+      const wrap = form.closest(".day-schedule");
       const date = wrap.dataset.date;
       const time = form.querySelector('input[type="time"]').value;
       const text = form.querySelector('input[type="text"]').value.trim();
