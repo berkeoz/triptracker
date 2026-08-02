@@ -25,6 +25,47 @@ function formatDateLabel(iso) {
   return `${DOW[d.getDay()]}, ${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
 
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------------- Local edit state (prep checklist + open items) ----------
+// Stored in this browser's localStorage only — not synced anywhere. Each
+// group tracks which default items were removed, which custom items were
+// added, and (for the checklist) which items are checked off.
+
+const STORAGE_KEY = "triptracker-edits-v1";
+
+function loadEditState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    /* ignore corrupt storage */
+  }
+  return { prep: {}, openItems: { added: [], removed: [] } };
+}
+
+function saveEditState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(EDIT_STATE));
+}
+
+const EDIT_STATE = loadEditState();
+
+function prepGroupState(heading) {
+  if (!EDIT_STATE.prep[heading]) {
+    EDIT_STATE.prep[heading] = { added: [], removed: [], checked: {} };
+  }
+  return EDIT_STATE.prep[heading];
+}
+
+function openItemsState() {
+  if (!EDIT_STATE.openItems) EDIT_STATE.openItems = { added: [], removed: [] };
+  return EDIT_STATE.openItems;
+}
+
 // ---------------- Hero ----------------
 
 function renderHero() {
@@ -145,25 +186,130 @@ function renderMonth(year, monthIndex) {
   return container;
 }
 
-// ---------------- Prep checklist ----------------
+// ---------------- Prep checklist (editable) ----------------
 
 function renderPrep() {
   const el = document.getElementById("prep");
   el.innerHTML = "";
-  Object.entries(PREP_ITEMS).forEach(([heading, items]) => {
+
+  Object.entries(PREP_ITEMS).forEach(([heading, defaults]) => {
+    const gState = prepGroupState(heading);
+    const items = defaults
+      .filter((t) => !gState.removed.includes(t))
+      .map((t) => ({ text: t, custom: false }))
+      .concat(gState.added.map((t) => ({ text: t, custom: true })));
+
     const panel = document.createElement("div");
     panel.className = "panel";
-    panel.innerHTML = `<strong>${heading}</strong><ul class="checklist">${items.map((i) => `<li>${i}</li>`).join("")}</ul>`;
+
+    const rows = items
+      .map((item) => {
+        const checked = !!gState.checked[item.text];
+        return `
+          <li class="check-item${checked ? " checked" : ""}" data-heading="${escapeHtml(heading)}" data-text="${escapeHtml(item.text)}" data-custom="${item.custom}">
+            <label>
+              <input type="checkbox" ${checked ? "checked" : ""} />
+              <span>${escapeHtml(item.text)}</span>
+            </label>
+            <button type="button" class="remove-btn" title="Remove">×</button>
+          </li>`;
+      })
+      .join("");
+
+    panel.innerHTML = `
+      <strong>${heading}</strong>
+      <ul class="checklist">${rows || `<li class="empty">Nothing here.</li>`}</ul>
+      <form class="add-row" data-heading="${escapeHtml(heading)}">
+        <input type="text" placeholder="Add item…" maxlength="200" />
+        <button type="submit">Add</button>
+      </form>
+    `;
     el.appendChild(panel);
+  });
+
+  el.querySelectorAll(".check-item input[type=checkbox]").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const li = cb.closest(".check-item");
+      const gState = prepGroupState(li.dataset.heading);
+      gState.checked[li.dataset.text] = cb.checked;
+      li.classList.toggle("checked", cb.checked);
+      saveEditState();
+    });
+  });
+
+  el.querySelectorAll(".check-item .remove-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const li = btn.closest(".check-item");
+      const gState = prepGroupState(li.dataset.heading);
+      const text = li.dataset.text;
+      if (li.dataset.custom === "true") {
+        gState.added = gState.added.filter((t) => t !== text);
+      } else if (!gState.removed.includes(text)) {
+        gState.removed.push(text);
+      }
+      delete gState.checked[text];
+      saveEditState();
+      renderPrep();
+    });
+  });
+
+  el.querySelectorAll(".add-row").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = form.querySelector("input");
+      const text = input.value.trim();
+      if (!text) return;
+      prepGroupState(form.dataset.heading).added.push(text);
+      saveEditState();
+      renderPrep();
+    });
   });
 }
 
-// ---------------- Open items ----------------
+// ---------------- Open items (editable) ----------------
 
 function renderOpenItems() {
   const el = document.getElementById("open-items");
-  el.innerHTML = OPEN_ITEMS.map((i) => `<li>${i}</li>`).join("");
+  const state = openItemsState();
+  const items = OPEN_ITEMS.filter((t) => !state.removed.includes(t))
+    .map((t) => ({ text: t, custom: false }))
+    .concat(state.added.map((t) => ({ text: t, custom: true })));
+
+  el.innerHTML =
+    items
+      .map(
+        (item) => `
+      <li data-text="${escapeHtml(item.text)}" data-custom="${item.custom}">
+        <span>${escapeHtml(item.text)}</span>
+        <button type="button" class="remove-btn" title="Remove">×</button>
+      </li>`
+      )
+      .join("") || `<li class="empty">Nothing open right now.</li>`;
+
+  el.querySelectorAll("li .remove-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const li = btn.closest("li");
+      const text = li.dataset.text;
+      if (li.dataset.custom === "true") {
+        state.added = state.added.filter((t) => t !== text);
+      } else if (!state.removed.includes(text)) {
+        state.removed.push(text);
+      }
+      saveEditState();
+      renderOpenItems();
+    });
+  });
 }
+
+document.getElementById("open-items-add").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = e.target.querySelector("input");
+  const text = input.value.trim();
+  if (!text) return;
+  openItemsState().added.push(text);
+  saveEditState();
+  renderOpenItems();
+});
 
 // ---------------- Agenda ----------------
 

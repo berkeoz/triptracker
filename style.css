@@ -119,21 +119,111 @@ h2 {
   font-weight: 600;
 }
 
-.checklist {
+ul.checklist {
   list-style: none;
   padding: 0;
   margin: 10px 0 0;
 }
 
-.checklist li {
+.checklist li.check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 4px 0;
   color: var(--text);
 }
 
-.checklist li::before {
-  content: "\2610\ ";
-  margin-right: 6px;
+.checklist li.check-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.checklist li.check-item input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.checklist li.check-item.checked span {
+  text-decoration: line-through;
   color: var(--muted);
+}
+
+.checklist li.empty,
+.open-list li.empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ---------------- Editable list controls ---------------- */
+
+.remove-btn {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.remove-btn:hover {
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.add-row button {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+ul.open-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.open-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
 }
 
 /* ---------------- Timeline ---------------- */
@@ -262,12 +352,12 @@ h2 {
   box-shadow: var(--shadow);
 }
 
-.panel ul {
+.panel > ul:not(.checklist):not(.open-list) {
   margin: 0;
   padding-left: 18px;
 }
 
-.panel li { padding: 3px 0; }
+.panel > ul:not(.checklist):not(.open-list) > li { padding: 3px 0; }
 
 .panel + .panel { margin-top: 12px; }
 
