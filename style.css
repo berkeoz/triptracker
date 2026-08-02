@@ -119,6 +119,27 @@ h2 {
   font-weight: 600;
 }
 
+.hero-clock {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.clock-time {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-zone {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 ul.checklist {
   list-style: none;
   padding: 0;

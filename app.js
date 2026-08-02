@@ -134,7 +134,9 @@ function renderHero() {
       <div class="hero-city">Still in Toronto</div>
       <div class="hero-sub">Departure: Thu 6 Aug, 23:45 · Air Transat TS 376</div>
       <a class="hero-btn" href="#day-${first}">View departure day</a>
+      <div id="trip-clock" class="hero-clock"></div>
     `;
+    updateClock();
     return;
   }
 
@@ -143,7 +145,9 @@ function renderHero() {
       <div class="hero-eyebrow">Trip complete</div>
       <div class="hero-city">Back in Toronto</div>
       <div class="hero-sub">Landed 6 Sep, 19:45 · YYZ</div>
+      <div id="trip-clock" class="hero-clock"></div>
     `;
+    updateClock();
     return;
   }
 
@@ -162,8 +166,39 @@ function renderHero() {
     ${day.going ? `<div class="hero-sub">${day.going}</div>` : ""}
     <ul class="hero-agenda">${items}</ul>
     <a class="hero-btn" href="#day-${today}">View full day</a>
+    <div id="trip-clock" class="hero-clock"></div>
   `;
+  updateClock();
 }
+
+// ---------------- Live clock ----------------
+
+function currentTzLeg() {
+  const today = todayISO();
+  const first = DAYS[0].date;
+  const last = DAYS[DAYS.length - 1].date;
+  if (today < first) return findLeg("toronto-home");
+  if (today > last) return findLeg("toronto-return");
+  return findLeg(findDay(today).leg);
+}
+
+function updateClock() {
+  const el = document.getElementById("trip-clock");
+  if (!el) return;
+  const leg = currentTzLeg();
+  const now = new Date();
+  const time = now.toLocaleTimeString("en-US", {
+    timeZone: leg.tz,
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: leg.tz, timeZoneName: "short" }).formatToParts(now);
+  const zoneAbbr = (parts.find((p) => p.type === "timeZoneName") || {}).value || "";
+  el.innerHTML = `<span class="clock-time">${time}</span><span class="clock-zone">${leg.city} · ${zoneAbbr}</span>`;
+}
+
+setInterval(updateClock, 1000);
 
 // ---------------- Timeline ----------------
 

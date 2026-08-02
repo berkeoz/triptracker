@@ -15,12 +15,12 @@
 // ---------------------------------------------------------------------------
 
 const LEGS = [
-  { id: "toronto-home", city: "Toronto", sub: "Home", color: "#7c6f64", start: null, end: "2026-08-06" },
-  { id: "amsterdam", city: "Amsterdam", sub: "Netherlands", color: "#f5a623", start: "2026-08-07", end: "2026-08-13" },
-  { id: "istanbul-1", city: "Istanbul", sub: "Stop 1", color: "#e0483e", start: "2026-08-13", end: "2026-08-14" },
-  { id: "greece", city: "Samothraki", sub: "Greece", color: "#2f6fd6", start: "2026-08-14", end: "2026-08-17" },
-  { id: "istanbul-2", city: "Istanbul", sub: "Stop 2", color: "#e0483e", start: "2026-08-17", end: "2026-09-06" },
-  { id: "toronto-return", city: "Toronto", sub: "Home", color: "#7c6f64", start: "2026-09-06", end: null },
+  { id: "toronto-home", city: "Toronto", sub: "Home", color: "#7c6f64", tz: "America/Toronto", start: null, end: "2026-08-06" },
+  { id: "amsterdam", city: "Amsterdam", sub: "Netherlands", color: "#f5a623", tz: "Europe/Amsterdam", start: "2026-08-07", end: "2026-08-13" },
+  { id: "istanbul-1", city: "Istanbul", sub: "Stop 1", color: "#e0483e", tz: "Europe/Istanbul", start: "2026-08-13", end: "2026-08-14" },
+  { id: "greece", city: "Samothraki", sub: "Greece", color: "#2f6fd6", tz: "Europe/Athens", start: "2026-08-14", end: "2026-08-17" },
+  { id: "istanbul-2", city: "Istanbul", sub: "Stop 2", color: "#e0483e", tz: "Europe/Istanbul", start: "2026-08-17", end: "2026-09-06" },
+  { id: "toronto-return", city: "Toronto", sub: "Home", color: "#7c6f64", tz: "America/Toronto", start: "2026-09-06", end: null },
 ];
 
 const OPEN_ITEMS = [
@@ -35,6 +35,56 @@ const PREP_ITEMS = {
 };
 
 const DAYS = [
+  {
+    date: "2026-08-01",
+    leg: "toronto-home",
+    title: "5 days until departure",
+    staying: "Home",
+    going: null,
+    flight: null,
+    schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
+    open: [],
+  },
+  {
+    date: "2026-08-02",
+    leg: "toronto-home",
+    title: "4 days until departure",
+    staying: "Home",
+    going: null,
+    flight: null,
+    schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
+    open: [],
+  },
+  {
+    date: "2026-08-03",
+    leg: "toronto-home",
+    title: "3 days until departure",
+    staying: "Home",
+    going: null,
+    flight: null,
+    schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
+    open: [],
+  },
+  {
+    date: "2026-08-04",
+    leg: "toronto-home",
+    title: "2 days until departure",
+    staying: "Home",
+    going: null,
+    flight: null,
+    schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
+    open: [],
+  },
+  {
+    date: "2026-08-05",
+    leg: "toronto-home",
+    title: "1 day until departure",
+    staying: "Home",
+    going: null,
+    flight: null,
+    schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
+    open: [],
+  },
   {
     date: "2026-08-06",
     leg: "toronto-home",
