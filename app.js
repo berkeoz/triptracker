@@ -37,7 +37,7 @@ function escapeHtml(str) {
 // the site outside of Vercel), so it still works, just not synced.
 
 const STORAGE_KEY = "triptracker-edits-v1";
-const emptyEditState = () => ({ prep: {}, openItems: { added: [], removed: [] } });
+const emptyEditState = () => ({ prep: {}, openItems: { added: [], removed: [] }, events: {} });
 
 let EDIT_STATE = emptyEditState();
 let BACKEND_AVAILABLE = false;
@@ -102,6 +102,23 @@ function openItemsState() {
   return EDIT_STATE.openItems;
 }
 
+function customEventsForDate(dateIso) {
+  if (!EDIT_STATE.events) EDIT_STATE.events = {};
+  if (!EDIT_STATE.events[dateIso]) EDIT_STATE.events[dateIso] = [];
+  return EDIT_STATE.events[dateIso];
+}
+
+function formatTime12h(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+function newEventId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 // ---------------- Hero ----------------
 
 function renderHero() {
@@ -132,7 +149,11 @@ function renderHero() {
 
   const day = findDay(today);
   const leg = findLeg(day.leg);
-  const flat = [...day.schedule.morning, ...day.schedule.lunch, ...day.schedule.evening].slice(0, 4);
+  const customToday = customEventsForDate(today)
+    .slice()
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .map((ev) => `${formatTime12h(ev.time)} — ${ev.text}`);
+  const flat = [...day.schedule.morning, ...day.schedule.lunch, ...day.schedule.evening, ...customToday].slice(0, 5);
   const items = flat.map((a) => `<li>${a}</li>`).join("");
   hero.innerHTML = `
     <div class="hero-eyebrow">Right now — ${formatDateLabel(today)}</div>
@@ -380,6 +401,33 @@ function renderAgenda() {
         ? `<div class="slot"><h4>${label}</h4><ul class="agenda-list">${items.map((a) => `<li>${a}</li>`).join("")}</ul></div>`
         : "";
 
+    const customEvents = customEventsForDate(day.date)
+      .slice()
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    const customEventsHtml = `
+      <div class="custom-events" data-date="${day.date}">
+        <h4>Added events</h4>
+        <ul class="agenda-list custom-list">
+          ${customEvents
+            .map(
+              (ev) => `
+            <li data-id="${ev.id}">
+              <span class="event-time">${formatTime12h(ev.time)}</span>
+              <span class="event-text">${escapeHtml(ev.text)}</span>
+              <button type="button" class="remove-btn" title="Remove">×</button>
+            </li>`
+            )
+            .join("")}
+        </ul>
+        <form class="add-event-row">
+          <input type="time" required />
+          <input type="text" placeholder="Event…" maxlength="200" required />
+          <button type="submit">Add</button>
+        </form>
+      </div>
+    `;
+
     card.innerHTML = `
       <div class="date-row">
         <span class="date-label">${formatDateLabel(day.date)}</span>
@@ -396,9 +444,35 @@ function renderAgenda() {
         ${slot("Lunch", day.schedule.lunch)}
         ${slot("Evening", day.schedule.evening)}
       </div>
+      ${customEventsHtml}
       ${openHtml}
     `;
     el.appendChild(card);
+  });
+
+  el.querySelectorAll(".custom-events .remove-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest(".custom-events");
+      const date = wrap.dataset.date;
+      const id = btn.closest("li").dataset.id;
+      EDIT_STATE.events[date] = customEventsForDate(date).filter((ev) => ev.id !== id);
+      saveEditState();
+      renderAgenda();
+    });
+  });
+
+  el.querySelectorAll(".add-event-row").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const wrap = form.closest(".custom-events");
+      const date = wrap.dataset.date;
+      const time = form.querySelector('input[type="time"]').value;
+      const text = form.querySelector('input[type="text"]').value.trim();
+      if (!time || !text) return;
+      customEventsForDate(date).push({ id: newEventId(), time, text });
+      saveEditState();
+      renderAgenda();
+    });
   });
 }
 
@@ -423,14 +497,13 @@ document.getElementById("jump-today").addEventListener("click", () => {
 // ---------------- Init ----------------
 
 async function init() {
+  EDIT_STATE = await loadEditState();
   renderHero();
   renderTimeline();
   renderCalendars();
-  renderAgenda();
-
-  EDIT_STATE = await loadEditState();
   renderPrep();
   renderOpenItems();
+  renderAgenda();
 }
 
 init();
