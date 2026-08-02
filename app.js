@@ -205,7 +205,7 @@ function renderAgenda() {
       </div>
       <div class="title">${day.title}</div>
       <div class="location-row">
-        ${day.staying ? `<div class="accommodation">Staying: ${day.staying}</div>` : ""}
+        ${day.staying ? `<div class="accommodation">Staying: ${day.staying}${day.stayingAddress ? ` <span class="address">— ${day.stayingAddress}</span>` : ""}</div>` : ""}
         ${day.going ? `<div class="going">→ ${day.going}</div>` : ""}
       </div>
       ${flightHtml}

@@ -7,6 +7,7 @@
 //   leg           id referencing LEGS (controls city label + color)
 //   title         short summary shown on the hero card
 //   staying       accommodation for that night, or null
+//   stayingAddress  full street address of that accommodation, or null
 //   going         where you're headed that day (travel days), or null
 //   flight        { route, airline, conf, dep, arr, notes } or null
 //   schedule      { morning: [...], lunch: [...], evening: [...] }
@@ -17,22 +18,20 @@ const LEGS = [
   { id: "toronto-home", city: "Toronto", sub: "Home", color: "#7c6f64", start: null, end: "2026-08-06" },
   { id: "amsterdam", city: "Amsterdam", sub: "Netherlands", color: "#f5a623", start: "2026-08-07", end: "2026-08-13" },
   { id: "istanbul-1", city: "Istanbul", sub: "Stop 1", color: "#e0483e", start: "2026-08-13", end: "2026-08-14" },
-  { id: "greece", city: "Greece", sub: "TBD city/island", color: "#2f6fd6", start: "2026-08-14", end: "2026-08-17" },
+  { id: "greece", city: "Samothraki", sub: "Greece", color: "#2f6fd6", start: "2026-08-14", end: "2026-08-17" },
   { id: "istanbul-2", city: "Istanbul", sub: "Stop 2", color: "#e0483e", start: "2026-08-17", end: "2026-09-06" },
   { id: "toronto-return", city: "Toronto", sub: "Home", color: "#7c6f64", start: "2026-09-06", end: null },
 ];
 
 const OPEN_ITEMS = [
-  "Greece: exact city/island and day-by-day plans not decided",
-  "Gift list: recipients and items not decided",
-  "Seyhmus meetup: time/location TBD",
+  "Samothraki: day-by-day plans not decided",
   "Nafel, Melihcan, Ilayda: dates not set",
   "Shareable version of this plan for parents — not yet drafted",
 ];
 
 const PREP_ITEMS = {
   "House closing (before Aug 6)": ["Electricity", "Water", "Terrace", "Cover the car"],
-  "Baggage prep (before Aug 6)": ["Gifts for others (list TBD)", "Pack different bag types", "Bring some plastic bags"],
+  "Baggage prep (before Aug 6)": ["Pack gifts (list finalized)", "Pack different bag types", "Bring some plastic bags"],
 };
 
 const DAYS = [
@@ -62,20 +61,22 @@ const DAYS = [
     leg: "amsterdam",
     title: "Arrive in Amsterdam",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: "Arriving in Amsterdam from Toronto",
     flight: null,
     schedule: {
       morning: ["In flight — landing 13:10"],
-      lunch: ["Arrive AMS 13:10 (Air Transat TS 376)", "Check in at Hotel nhow"],
-      evening: ["Meet with Seyhmus (time TBD)"],
+      lunch: ["Arrive AMS 13:10 (Air Transat TS 376)", "Meet Seyhmus at the airport", "Check in at Hotel nhow"],
+      evening: [],
     },
-    open: ["Seyhmus meetup: time/location TBD"],
+    open: [],
   },
   {
     date: "2026-08-08",
     leg: "amsterdam",
     title: "Grachtenfestival + dinner",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: null,
     flight: null,
     schedule: {
@@ -90,6 +91,7 @@ const DAYS = [
     leg: "amsterdam",
     title: "Dinner at The Lobby Nesplein",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: null,
     flight: null,
     schedule: {
@@ -104,6 +106,7 @@ const DAYS = [
     leg: "amsterdam",
     title: "Open day",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: null,
     flight: null,
     schedule: {
@@ -118,6 +121,7 @@ const DAYS = [
     leg: "amsterdam",
     title: "Open day",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: null,
     flight: null,
     schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
@@ -128,6 +132,7 @@ const DAYS = [
     leg: "amsterdam",
     title: "Open day",
     staying: "Hotel nhow",
+    stayingAddress: "Europaboulevard 2b, 1078 Amsterdam",
     going: null,
     flight: null,
     schedule: { morning: ["No fixed plans yet"], lunch: [], evening: [] },
@@ -137,7 +142,8 @@ const DAYS = [
     date: "2026-08-13",
     leg: "istanbul-1",
     title: "Amsterdam → Istanbul",
-    staying: "Istanbul — TBD",
+    staying: "Acıbadem, Istanbul",
+    stayingAddress: null,
     going: "Flying to Istanbul (Sabiha Gökçen)",
     flight: {
       route: "Amsterdam → Istanbul (Sabiha Gökçen)",
@@ -157,22 +163,24 @@ const DAYS = [
   {
     date: "2026-08-14",
     leg: "greece",
-    title: "Istanbul → Greece",
+    title: "Istanbul → Samothraki",
     staying: "Kirkos Apartments",
-    going: "Traveling to Greece",
+    stayingAddress: "Kamariotissa, 68002, Samothraki, Greece",
+    going: "Traveling to Samothraki",
     flight: null,
     schedule: {
-      morning: ["Travel to Greece"],
+      morning: ["Travel to Samothraki"],
       lunch: [],
       evening: ["Arrive and settle into Kirkos Apartments"],
     },
-    open: ["Greece: exact city/island and day-by-day plans not decided"],
+    open: ["Samothraki: day-by-day plans not decided"],
   },
   {
     date: "2026-08-15",
     leg: "greece",
-    title: "Greece",
+    title: "Samothraki",
     staying: "Kirkos Apartments",
+    stayingAddress: "Kamariotissa, 68002, Samothraki, Greece",
     going: null,
     flight: null,
     schedule: { morning: ["Plans TBD"], lunch: ["Plans TBD"], evening: ["Plans TBD"] },
@@ -181,8 +189,9 @@ const DAYS = [
   {
     date: "2026-08-16",
     leg: "greece",
-    title: "Greece",
+    title: "Samothraki",
     staying: "Kirkos Apartments",
+    stayingAddress: "Kamariotissa, 68002, Samothraki, Greece",
     going: null,
     flight: null,
     schedule: { morning: ["Plans TBD"], lunch: ["Plans TBD"], evening: ["Plans TBD"] },
@@ -191,8 +200,9 @@ const DAYS = [
   {
     date: "2026-08-17",
     leg: "istanbul-2",
-    title: "Greece → Istanbul",
-    staying: "Istanbul — TBD",
+    title: "Samothraki → Istanbul",
+    staying: "Acıbadem, Istanbul",
+    stayingAddress: null,
     going: "Returning to Istanbul",
     flight: null,
     schedule: {
@@ -206,7 +216,8 @@ const DAYS = [
     date: "2026-08-18",
     leg: "istanbul-2",
     title: "Istanbul — career prep begins",
-    staying: "Istanbul — TBD",
+    staying: "Acıbadem, Istanbul",
+    stayingAddress: null,
     going: null,
     flight: null,
     schedule: {
@@ -229,7 +240,8 @@ const DAYS = [
       date: iso,
       leg: "istanbul-2",
       title: "Istanbul",
-      staying: "Istanbul — TBD",
+      staying: "Acıbadem, Istanbul",
+      stayingAddress: null,
       going: null,
       flight: null,
       schedule: {

@@ -334,6 +334,11 @@ h2 {
   color: var(--accent);
 }
 
+.day-card .address {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .schedule {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
